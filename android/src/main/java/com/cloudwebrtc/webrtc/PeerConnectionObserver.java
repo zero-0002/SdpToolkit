@@ -35,6 +35,7 @@ import org.webrtc.IceCandidate;
 import org.webrtc.MediaStream;
 import org.webrtc.MediaStreamTrack;
 import org.webrtc.PeerConnection;
+import org.webrtc.Priority;
 import org.webrtc.RTCStats;
 import org.webrtc.RTCStatsReport;
 import org.webrtc.RtpCapabilities;
@@ -641,6 +642,64 @@ class PeerConnectionObserver implements PeerConnection.Observer, EventChannel.St
     return type;
   }
 
+  private int stringToPriority(String priority) {
+    if (priority == null) return Priority.LOW;
+    switch (priority) {
+      case "very-low":
+        return Priority.VERY_LOW;
+      case "low":
+        return Priority.LOW;
+      case "medium":
+        return Priority.MEDIUM;
+      case "high":
+        return Priority.HIGH;
+      default:
+        return Priority.LOW;
+    }
+  }
+
+  private String priorityToString(int priority) {
+    switch (priority) {
+      case Priority.VERY_LOW:
+        return "very-low";
+      case Priority.LOW:
+        return "low";
+      case Priority.MEDIUM:
+        return "medium";
+      case Priority.HIGH:
+        return "high";
+      default:
+        return "low";
+    }
+  }
+
+  private double stringToBitratePriority(String priority) {
+    if (priority == null) return 1.0;
+    switch (priority) {
+      case "very-low":
+        return 0.5;
+      case "low":
+        return 1.0;
+      case "medium":
+        return 2.0;
+      case "high":
+        return 4.0;
+      default:
+        return 1.0;
+    }
+  }
+
+  private String bitratePriorityToString(double bitratePriority) {
+    if (bitratePriority <= 0.5) {
+      return "very-low";
+    } else if (bitratePriority <= 1.0) {
+      return "low";
+    } else if (bitratePriority <= 2.0) {
+      return "medium";
+    }
+    return "high";
+  }
+
   private RtpParameters.Encoding mapToEncoding(Map<String, Object> parameters) {
     RtpParameters.Encoding encoding = new RtpParameters.Encoding((String) parameters.get("rid"), true, 1.0);
 
@@ -674,6 +733,14 @@ class PeerConnectionObserver implements PeerConnection.Observer, EventChannel.St
 
     if (parameters.get("scalabilityMode") != null) {
       encoding.scalabilityMode = (String) parameters.get("scalabilityMode");
+    }
+
+    if (parameters.get("priority") != null) {
+      encoding.bitratePriority = stringToBitratePriority((String) parameters.get("priority"));
+    }
+
+    if (parameters.get("networkPriority") != null) {
+      encoding.networkPriority = stringToPriority((String) parameters.get("networkPriority"));
     }
 
     return encoding;
@@ -753,6 +820,12 @@ class PeerConnectionObserver implements PeerConnection.Observer, EventChannel.St
         Double scaleResolutionDownBy = (Double) encoding.get("scaleResolutionDownBy");
         if (scaleResolutionDownBy != null)
           currentParams.scaleResolutionDownBy = scaleResolutionDownBy;
+        String priority = (String) encoding.get("priority");
+        if (priority != null)
+          currentParams.bitratePriority = stringToBitratePriority(priority);
+        String networkPriority = (String) encoding.get("networkPriority");
+        if (networkPriority != null)
+          currentParams.networkPriority = stringToPriority(networkPriority);
       }
     }
 
@@ -805,6 +878,8 @@ class PeerConnectionObserver implements PeerConnection.Observer, EventChannel.St
       if (encoding.ssrc != null) {
         map.putLong("ssrc", encoding.ssrc);
       }
+      map.putString("priority", bitratePriorityToString(encoding.bitratePriority));
+      map.putString("networkPriority", priorityToString(encoding.networkPriority));
       encodings.pushMap(map);
     }
     info.putArray("encodings", encodings.toArrayList());
