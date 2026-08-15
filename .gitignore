@@ -1,7 +1,7 @@
-__pycache__/
-*.py[cod]
-*.egg-info/
-build/
-dist/
-.venv/
-.mypy_cache/
+bin/
+obj/
+*.user
+branch_structure.json
+temp_auto_push.bat
+temp_interactive_push.bat
+.gitignore
