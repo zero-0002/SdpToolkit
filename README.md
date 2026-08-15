@@ -1,34 +1,25 @@
-# webrtc-stats-cli
+# SdpToolkit
 
-A tiny, dependency-free CLI that turns a `RTCPeerConnection.getStats()` JSON dump
-into a readable throughput / packet-loss / jitter report.
+A small C# (.NET 8) console tool + library that parses an SDP offer/answer
+(RFC 4566) and prints its media sections, directions and codecs — useful when
+debugging WebRTC negotiation.
 
-## Usage
-
-```bash
-python -m webrtc_stats_cli getstats.json
-# or from stdin
-cat getstats.json | python -m webrtc_stats_cli -
-```
-
-To capture a dump in the browser:
-
-```js
-const stats = await pc.getStats();
-console.log(JSON.stringify([...stats.values()]));
-```
-
-## Install
+## Build & run
 
 ```bash
-pip install -e .
-webrtc-stats getstats.json
+dotnet run -- offer.sdp
+# or pipe via stdin
+cat answer.sdp | dotnet run
 ```
 
-## What it reports
+## Library
 
-- Inbound / outbound RTP grouped by media kind
-- Codec (resolved via the `codec` records)
-- Bytes transferred, packet-loss ratio, jitter (ms) and frame rate
+```csharp
+using SdpToolkit;
+
+var doc = SdpDocument.Parse(File.ReadAllText("offer.sdp"));
+foreach (var m in doc.Media)
+    Console.WriteLine($"{m.Kind}: {m.Codecs.Count} codecs");
+```
 
 MIT licensed.
